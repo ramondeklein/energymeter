@@ -1,0 +1,7 @@
+#!/bin/sh
+mysql_user=root
+mysql_password=struck
+
+# Create and update the database
+mysql --user=$mysql_user --password=$mysql_password < createdb.sql
+mysql --user=$mysql_user --password=$mysql_password metering < sampledata.sql
