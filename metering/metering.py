@@ -30,8 +30,7 @@ def setup_pins(simulation):
   # Setup callbacks
   def cbGpioCallback(channel):
     pinInfo = pinInfoDict[channel]
-    logger.info('Pulse "' + pinInfo['description'] + '" detected.')
-    pulseLogging.log_pulse(pinInfo['meter'])
+    pulseLogging.log_pulse(pinInfo['meter'],1)
 
   key = '1'
   for rows in rows:
@@ -54,6 +53,8 @@ def setup_pins(simulation):
     keyInfoDict[key] = { 'meter': id, 'description': description }
     key = chr(ord(key) + 1)
 
+    pulseLogging.add_meter(id, description)
+
 def free_pins(simulation):
   if not simulation:
     for pin in pinInfoDict:
@@ -72,7 +73,7 @@ while ch != 'q':
   if ch in keyInfoDict:
     keyInfo = keyInfoDict[ch]
     logger.info('Pulse "' + keyInfo['description'] + '" simulated.')
-    pulseLogging.log_pulse(keyInfo['meter'])
+    pulseLogging.log_pulse(keyInfo['meter'],1)
   ch = getch()
 
 # Free the pins
