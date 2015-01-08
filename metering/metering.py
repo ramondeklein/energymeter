@@ -7,6 +7,10 @@ logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=loggin
 # Setup logger
 logger = logging.getLogger(__name__)
 
+# Extend module search path
+import sys
+sys.path.append('..')
+
 # Import modules
 from helpers import Database, Settings, getch
 from pulselogging import PulseLogging
