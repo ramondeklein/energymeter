@@ -1,7 +1,8 @@
 from app import app
 
 # Import modules
-import math, datetime, dateutil.parser
+import datetime
+import dateutil.parser
 from flask import request, jsonify
 from emhelpers import Database
 
