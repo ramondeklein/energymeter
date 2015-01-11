@@ -12,7 +12,7 @@ import sys
 sys.path.append('..')
 
 # Import modules
-from helpers import Database, Settings, getch
+from emhelpers import Database, Settings, getch
 from pulselogging import PulseLogging
 
 # Check if we're running in simulation mode
