@@ -11,8 +11,8 @@ USE metering;
 
 # Create the versions table
 CREATE TABLE IF NOT EXISTS versions (
-  version   INT      NOT NULL,
-  timestamp DATETIME NOT NULL
+  version   INT       NOT NULL,
+  timestamp TIMESTAMP NOT NULL
 );
 INSERT versions(version,timestamp) VALUES(1,NOW());
 
@@ -39,7 +39,7 @@ ALTER TABLE meters ADD CONSTRAINT ux_meters_pin UNIQUE (pin);
 
 CREATE TABLE pulse_readings (
   meter_ref   SMALLINT     NOT NULL,
-  timestamp   DATETIME     NOT NULL,
+  timestamp   TIMESTAMP(3) NOT NULL,
   delta       MEDIUMINT    NULL
 ) ENGINE = MYISAM;
 
@@ -48,7 +48,7 @@ ALTER TABLE pulse_readings ADD CONSTRAINT FOREIGN KEY fk_pulse_readings_meter(me
 CREATE TABLE pulse_readings_per_duration (
   meter_ref    SMALLINT    NOT NULL,
   duration     SMALLINT    NOT NULL,
-  timestamp    DATETIME    NOT NULL,
+  timestamp    TIMESTAMP   NOT NULL,
   pulses       SMALLINT    NOT NULL DEFAULT 0,
     
   PRIMARY KEY (meter_ref, duration, timestamp)

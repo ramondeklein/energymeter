@@ -45,7 +45,8 @@ class PulseLogging:
 
     # Save the pulse into the database
     cur = Database.cursor()
-    cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,delta) VALUES(%s,NOW(),%s)", (meterId, delta));
+    print now
+    cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,delta) VALUES(%s,NOW(3),%s)", (meterId, delta));
     logger.debug("Pulse written (meter={}[{}], delta={})".format(meter['description'], meterId, delta))
 
     # Save all durations
