@@ -14,15 +14,24 @@ sys.path.append('..')
 # Import modules
 from helpers import Database, Settings, getch
 from pulselogging import PulseLogging
-import RPi.GPIO as GPIO
+
+# Check if we're running in simulation mode
+liveMode = Settings.get_bool('metering:live_mode')
+
+# Import the GPIO module when not running in simulation
+if liveMode:
+  import RPi.GPIO as GPIO
+  logger.info('Running in live mode')
+else:
+  logger.info('Running in simulation mode (use keyboard to generate pulses).')
 
 # Global variables
 pulseLogging = PulseLogging()
 pinInfoDict = {}
 keyInfoDict = {}
 
-def setup_pins(simulation):
-  if not simulation:
+def setup_pins():
+  if liveMode:
     # Initialize GPIO
     GPIO.setmode(GPIO.BCM)
 
@@ -30,11 +39,6 @@ def setup_pins(simulation):
   cur = Database.cursor()
   cur.execute("SELECT id, pin, description, bounce_time, pulse_value FROM meters")
   rows = cur.fetchall()
-
-  # Setup callbacks
-  def cbGpioCallback(channel):
-    pinInfo = pinInfoDict[channel]
-    pulseLogging.log_pulse(pinInfo['meter'],1)
 
   key = '1'
   for rows in rows:
@@ -46,8 +50,13 @@ def setup_pins(simulation):
     pulse_value = rows[4]
 
     # Save info in the dictionary
-    if (not simulation) and (pin >= 0):
+    if liveMode and (pin >= 0):
       pinInfoDict[pin] = { 'meter': id, 'description': description }
+
+      # Setup callbacks
+      def cbGpioCallback(channel):
+        pinInfo = pinInfoDict[channel]
+        pulseLogging.log_pulse(pinInfo['meter'],1)
 
       # Initialize GPIO pins (TODO: Add FALLING/RAISING support)
       GPIO.setup(pin, GPIO.IN)
@@ -59,17 +68,14 @@ def setup_pins(simulation):
 
     pulseLogging.add_meter(id, description)
 
-def free_pins(simulation):
-  if not simulation:
+def free_pins():
+  if liveMode:
     for pin in pinInfoDict:
       GPIO.remove_event_detect(pin)
     GPIO.cleanup()
 
-# Check if we're running in simulation mode
-simulation = Settings.get_bool('server:Simulation')
-
 # Setup all pins
-setup_pins(simulation)
+setup_pins()
 
 # Handle all keystrokes, until 'q' is typed
 ch = getch()
@@ -81,4 +87,4 @@ while ch != 'q':
   ch = getch()
 
 # Free the pins
-free_pins(simulation)
+free_pins()
