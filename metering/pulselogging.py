@@ -45,7 +45,6 @@ class PulseLogging:
 
     # Save the pulse into the database
     cur = Database.cursor()
-    print now
     cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,delta) VALUES(%s,NOW(3),%s)", (meterId, delta));
     logger.debug("Pulse written (meter={}[{}], delta={})".format(meter['description'], meterId, delta))
 
@@ -59,7 +58,7 @@ class PulseLogging:
         meterDuration['pulses'] = meterDuration['pulses']+increment
       else:
         # If we had a previous period, then it's complete now and we can save it. We don't
-	# save the first counted period, because it will probably be incomplete.
+        # save the first counted period, because it will probably be incomplete.
         if lastPeriod:
           pulses = meterDuration['pulses']
           if meterDuration['periodsCounted'] > 0:
