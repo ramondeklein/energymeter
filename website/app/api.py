@@ -1,24 +1,32 @@
 from app import app
 
 # Import modules
-import datetime, dateutil.parser
+import math, datetime, dateutil.parser
 from flask import request, jsonify
 from emhelpers import Database
 
-def getSqlUtcDateTime(dt):
+def to_sql_utc(dt, precision):
   # If there is no timezone specified, then we convert it from local time
   if not dt.tzinfo:
       dt = dt.replace(tzinfo=dateutil.tz.tzlocal())
 
-  # Round the datetime to a SQL compatible structure (without ms)
-  if end.microsecond > 0:
-    end = end.replace(microsecond=0) + datetime.timedelta(seconds=1)
+  # Round on the proper precision
+  dt = dt.replace(microsecond=int(round(float(dt.microsecond) / 1000000, precision) * 1000000))
 
   # Convert back to UTC
-  dt.astimezone(dateutil.tz.tzutc())
-  return dt
+  return dt.astimezone(dateutil.tz.tzutc())
 
-def get_period():
+def from_sql_utc(dt, precision = 0):
+  # Format with the proper precision
+  dt = dt.replace(tzinfo=None)
+  if precision != 6 and dt.microsecond:
+      if precision == 0:
+          dt = dt.replace(microsecond=0)
+      else:
+        return dt.replace(tzinfo=None).isoformat()[:precision-6].rstrip('0') + 'Z'
+  return dt.replace(tzinfo=None).isoformat() + 'Z'
+
+def get_period(precision):
   # Determine the start and end parameters (optional)
   argStart = request.args.get('start')
   argEnd = request.args.get('end')
@@ -36,27 +44,20 @@ def get_period():
     end = start + datetime.timedelta(days=1)
 
   # If there is no timezone specified, then we convert it from local time
-  if not start.tzinfo:
-      start = start.replace(tzinfo=dateutil.tz.tzlocal())
-  if not end.tzinfo:
-      end = end.replace(tzinfo=dateutil.tz.tzlocal())
-
-  # Make sure we align to the second
-  if start.microsecond > 0:
-      start = start.replace(microsecond=0)
-  if end.microsecond > 0:
-    end = end.replace(microsecond=0) + datetime.timedelta(seconds=1)
+  start = to_sql_utc(start, precision)
+  end = to_sql_utc(end, precision)
 
   # Convert datetime to UTC
   return {
-    "utcStart": start.astimezone(dateutil.tz.tzutc()),
-    "utcEnd": end.astimezone(dateutil.tz.tzutc())
+    "utcStart": start,
+    "utcEnd": end
   }
 
 @app.route("/api/v1/pulses/<int:meter_id>")
 def get_pulses(meter_id):
   # Obtain the period
-  period = get_period()
+  precision = 3
+  period = get_period(precision)
   utcStart = period['utcStart']
   utcEnd = period['utcEnd']
 
@@ -65,15 +66,16 @@ def get_pulses(meter_id):
   cur.execute("SELECT timestamp, delta FROM pulse_readings WHERE timestamp >= %s AND timestamp < %s ORDER BY timestamp", (utcStart, utcEnd));
   rows = cur.fetchall()
   return jsonify({
-    'start': utcStart.replace(tzinfo=None).isoformat() + 'Z',
-    'end': utcEnd.replace(tzinfo=None).isoformat() + 'Z',
-    'pulses': map(lambda r: [r[0].isoformat() + 'Z', r[1]], rows)
+    'start': from_sql_utc(utcStart, precision),
+    'end': from_sql_utc(utcEnd, precision),
+    'pulses': map(lambda r: [from_sql_utc(r[0], precision), r[1]], rows)
   })
 
 @app.route("/api/v1/pulses/<int:meter_id>/<int:duration>")
 def get_duration(meter_id, duration):
   # Obtain the period
-  period = get_period()
+  precision = 3
+  period = get_period(precision)
   utcStart = period['utcStart']
   utcEnd = period['utcEnd']
 
@@ -82,7 +84,7 @@ def get_duration(meter_id, duration):
   cur.execute("SELECT timestamp, pulses FROM pulse_readings_per_duration WHERE timestamp >= %s AND timestamp < %s ORDER BY timestamp", (utcStart, utcEnd));
   rows = cur.fetchall()
   return jsonify({
-    'start': utcStart.isoformat(),
-    'end': utcEnd.isoformat(),
-    'pulses': map(lambda r: [r[0].isoformat() + 'Z', r[1]], rows)
+    'start': from_sql_utc(utcStart, precision),
+    'end': from_sql_utc(utcEnd, precision),
+    'pulses': map(lambda r: [from_sql_utc(r[0], precision), r[1]], rows)
   })
