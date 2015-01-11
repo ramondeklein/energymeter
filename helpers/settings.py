@@ -5,14 +5,14 @@ class Settings:
   @staticmethod
   def get_string(setting):
     cur = Database.cursor()
-    cur.execute("SELECT value FROM settings WHERE setting = %s", setting)
+    cur.execute("SELECT value FROM settings WHERE setting = %s", (setting,))
     return cur.fetchone()
 
   # String 'set' method
   @staticmethod
   def set_string(setting, value):
     cur = Database.cursor()
-    cur.execute("INSERT INTO settings(setting,value) VALUES(%s,%s) ON DUPLICATE KEY UPDATE value=%s", setting, value, value)
+    cur.execute("INSERT INTO settings(setting,value) VALUES(%s,%s) ON DUPLICATE KEY UPDATE value=%s", (setting, value, value))
     Database.commit()
 
   # Boolean 'get' method
