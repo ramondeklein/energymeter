@@ -1,4 +1,4 @@
-from app import app
+from server import app
 
 # Import modules
 import datetime
@@ -6,6 +6,7 @@ import dateutil.parser
 from flask import request, jsonify
 from emhelpers import Database
 
+epoch = datetime.datetime.utcfromtimestamp(0)
 
 def to_sql_utc(dt, precision):
     # If there is no timezone specified, then we convert it from local time
@@ -19,16 +20,9 @@ def to_sql_utc(dt, precision):
     return dt.astimezone(dateutil.tz.tzutc())
 
 
-def from_sql_utc(dt, precision = 0):
-    # Format with the proper precision
+def from_sql_utc(dt):
     dt = dt.replace(tzinfo=None)
-    if precision != 6 and dt.microsecond:
-        if precision == 0:
-            dt = dt.replace(microsecond=0)
-        else:
-            return dt.replace(tzinfo=None).isoformat()[:precision-6].rstrip('0') + 'Z'
-    return dt.replace(tzinfo=None).isoformat() + 'Z'
-
+    return (dt - epoch).total_seconds() * 1000
 
 def get_period(precision):
     # Determine the start and end parameters (optional)
@@ -66,9 +60,9 @@ def get_pulses(meter_id):
     cur.execute("SELECT timestamp, delta FROM pulse_readings WHERE timestamp >= %s AND timestamp < %s ORDER BY timestamp", (utc_start, utc_end));
     rows = cur.fetchall()
     return jsonify({
-        'start': from_sql_utc(utc_start, precision),
-        'end': from_sql_utc(utc_end, precision),
-        'pulses': map(lambda r: [from_sql_utc(r[0], precision), r[1]], rows)
+        'start': from_sql_utc(utc_start),
+        'end': from_sql_utc(utc_end),
+        'pulses': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
     })
 
 
@@ -83,7 +77,7 @@ def get_duration(meter_id, duration):
     cur.execute("SELECT timestamp, pulses FROM pulse_readings_per_duration WHERE timestamp >= %s AND timestamp < %s ORDER BY timestamp", (utc_start, utc_end));
     rows = cur.fetchall()
     return jsonify({
-        'start': from_sql_utc(utc_start, precision),
-        'end': from_sql_utc(utc_end, precision),
-        'pulses': map(lambda r: [from_sql_utc(r[0], precision), r[1]], rows)
+        'start': from_sql_utc(utc_start),
+        'end': from_sql_utc(utc_end),
+        'pulses': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
     })

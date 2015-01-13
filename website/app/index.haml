@@ -1,0 +1,46 @@
+!!! 5
+%html
+  %head
+    %title Energy Monitor
+    %meta{'charset' => 'utf-8'}
+    %meta{'http-equiv' => 'X-UA-Compatible', 'content' => 'IE=edge'}
+    %meta{'name' => 'description', 'content' => 'Energy Monitor for the Raspberry Pi'}
+    %meta{'name' => 'author', 'content' => 'Ramon de Klein'}
+    %meta{'name' => 'viewport', 'content' => 'user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1'}
+    %meta{'name' => 'fragment', 'content' => '!'}
+    %base{'href' => '/'}
+    -# Place favicon.ico and apple-touch-icon.png in the root directory
+
+    / build:css(app) styles/vendor.css
+    %link{:rel => 'stylesheet', :href => 'bower_components/html5-boilerplate/css/normalize.css'}
+    %link{:rel => 'stylesheet', :href => 'bower_components/html5-boilerplate/css/main.css'}
+    / endbuild
+
+    / build:css({.tmp,app}) styles/styles.css
+    %link{:rel => 'stylesheet', :href => 'styles/site.css'}
+    / endbuild
+
+    -# We need to load Modernizr first
+    / build:js({.tmp,app}) scripts/preload.js
+    %script{'src' => 'scripts/custom-modernizr.js'}
+    / endbuild
+
+  %body{ng: {app: 'energyMonitor', strict: {di: true}}}
+    -# This is the default Angular view
+    #view{ng: {view: 'main'}}
+
+    / build:js(app) scripts/vendor.js
+    %script{'src' => 'bower_components/html5-boilerplate/js/plugins.js'}
+    %script{'src' => 'bower_components/jquery/dist/jquery.js'}
+    %script{'src' => 'bower_components/angular/angular.js'}
+    %script{'src' => 'bower_components/angular-route/angular-route.js'}
+    %script{'src' => 'bower_components/highstock-release/highstock.src.js'}
+    / endbuild
+
+    / build:js({.tmp,app}) scripts/scripts.js
+    %script{'src' => 'scripts/main.js'}
+
+    %script{'src' => 'scripts/services/readingservice.js'}
+
+    %script{'src' => 'scripts/controllers/energychartcontroller.js'}
+    / endbuild

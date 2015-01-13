@@ -1,4 +1,4 @@
-from app import app
+from server import app
 
 @app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
