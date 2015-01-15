@@ -1,0 +1,129 @@
+2015-01-15 21:23:15,926:INFO:Running in live mode
+2015-01-15 21:23:15,935:INFO:Setting GPIO for "Electricity": pin #22
+2015-01-15 21:23:15,949:INFO:Setting GPIO for "Gas": pin #27
+2015-01-15 21:23:19,316:DEBUG:Pulse written (meter='Gas', delta=0ms)
+2015-01-15 21:23:21,501:DEBUG:Pulse written (meter='Electricity', delta=0ms)
+2015-01-15 21:23:25,926:DEBUG:Pulse written (meter='Gas', delta=6610ms)
+2015-01-15 21:23:26,847:DEBUG:Pulse written (meter='Electricity', delta=5345ms)
+2015-01-15 21:23:32,244:DEBUG:Pulse written (meter='Electricity', delta=5397ms)
+2015-01-15 21:23:32,752:DEBUG:Pulse written (meter='Gas', delta=6826ms)
+2015-01-15 21:23:38,313:DEBUG:Pulse written (meter='Electricity', delta=6069ms)
+2015-01-15 21:23:39,368:DEBUG:Pulse written (meter='Gas', delta=6616ms)
+2015-01-15 21:23:44,380:DEBUG:Pulse written (meter='Electricity', delta=6066ms)
+2015-01-15 21:23:46,213:DEBUG:Pulse written (meter='Gas', delta=6843ms)
+2015-01-15 21:23:51,347:DEBUG:Pulse written (meter='Electricity', delta=6046ms)
+2015-01-15 21:23:52,832:DEBUG:Pulse written (meter='Gas', delta=6619ms)
+2015-01-15 21:23:56,504:DEBUG:Pulse written (meter='Electricity', delta=6077ms)
+2015-01-15 21:23:59,646:DEBUG:Pulse written (meter='Gas', delta=6814ms)
+2015-01-15 21:24:02,581:DEBUG:Pulse written (meter='Electricity', delta=6076ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:06,261:DEBUG:Pulse written (meter='Gas', delta=6614ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:08,558:DEBUG:Pulse written (meter='Electricity', delta=5976ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:13,061:DEBUG:Pulse written (meter='Gas', delta=6800ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:14,127:DEBUG:Pulse written (meter='Electricity', delta=5569ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:19,599:DEBUG:Pulse written (meter='Gas', delta=6530ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:19,712:DEBUG:Pulse written (meter='Electricity', delta=5583ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:24,170:DEBUG:Pulse written (meter='Electricity', delta=4458ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:26,310:DEBUG:Pulse written (meter='Gas', delta=6717ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:29,657:DEBUG:Pulse written (meter='Electricity', delta=5486ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:32,887:DEBUG:Pulse written (meter='Gas', delta=6577ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:35,613:DEBUG:Pulse written (meter='Electricity', delta=5956ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:39,600:DEBUG:Pulse written (meter='Gas', delta=6712ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:41,574:DEBUG:Pulse written (meter='Electricity', delta=5960ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:46,190:DEBUG:Pulse written (meter='Gas', delta=6589ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined
+2015-01-15 21:24:47,592:DEBUG:Pulse written (meter='Electricity', delta=6017ms)
+Traceback (most recent call last):
+  File "./metering.py", line 59, in cb_gpio_callback
+    pulseLogging.log_pulse(pinInfo['meter'],1)
+  File "/root/energymeter/metering/pulselogging.py", line 71, in log_pulse
+    logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+NameError: global name 'lastPeriod' is not defined

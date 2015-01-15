@@ -61,6 +61,7 @@ def setup_pins():
             # Initialize GPIO pins (TODO: Add FALLING/RAISING support)
             GPIO.setup(pin, GPIO.IN)
             GPIO.add_event_detect(pin, GPIO.FALLING, callback=cb_gpio_callback, bouncetime=bounce_time)
+            logger.info('Setting GPIO for "' + description + '": pin #' + str(pin))
 
         # Assign a key to the meter
         keyInfoDict[key] = { 'meter': id, 'description': description }
@@ -79,12 +80,18 @@ def free_pins():
 setup_pins()
 
 # Handle all keystrokes, until 'q' is typed
-ch = getch()
-while ch != 'q':
+if liveMode:
+  import time
+  while True:
+    time.sleep(1000);
+else:
+  logger.info('Logging events until \'q\' is pressed')
+  ch = getch()
+  while ch != 'q':
     if ch in keyInfoDict:
-        keyInfo = keyInfoDict[ch]
-        logger.info('Pulse "' + keyInfo['description'] + '" simulated.')
-        pulseLogging.log_pulse(keyInfo['meter'],1)
+      keyInfo = keyInfoDict[ch]
+      logger.info('Pulse "' + keyInfo['description'] + '" simulated.')
+      pulseLogging.log_pulse(keyInfo['meter'],1)
     ch = getch()
 
 # Free the pins

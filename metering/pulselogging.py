@@ -17,12 +17,12 @@ def get_period(now, duration):
 class PulseLogging:
     def __init__(self):
         self.meters = {}
-        self.durations = [60, 5 * 60, 15 * 60, 60 * 60]
+        self.durations = [60, 15 * 60, 60 * 60]
 
     def add_meter(self, meter_id, description):
         meter = self.meters[meter_id] = {
             'last_pulse': 0,
-            'description': description
+            'description': description,
         }
         for duration in self.durations:
             meter[duration] = {
@@ -48,8 +48,8 @@ class PulseLogging:
 
         # Save the pulse into the database
         cur = Database.cursor()
-        cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,delta) VALUES(%s,NOW(3),%s)", (meter_id, delta))
-        logger.debug("Pulse written (meter={}[{}], delta={})".format(meter['description'], meter_id, delta))
+        cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,delta) VALUES(%s,NOW(),%s)", (meter_id, delta))
+        logger.debug("Pulse written (meter='{}', delta={}ms)".format(meter['description'], delta))
 
         # Save all durations
         for duration in self.durations:
@@ -64,12 +64,12 @@ class PulseLogging:
                 # save the first counted period, because it will probably be incomplete.
                 if last_period:
                     pulses = meter_duration['pulses']
-                    if meter_duration['periodsCounted'] > 0:
+                    if meter_duration['periods_counted'] > 0:
                         cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,pulses) VALUES(%s,%s,%s,%s)", (meter_id, duration, lastPeriod, pulses));
-                        logger.debug("Pulse duration written (meter={}[{}], timestamp={} [duration:{}], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+                        logger.debug("Pulse duration written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
                     else:
-                        logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
-                    meter_duration['periodsCounted'] += 1
+                        logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, lastPeriod, duration, pulses))
+                    meter_duration['periods_counted'] += 1
 
                 # Initialize the new period
                 meter_duration['last_period'] = current_period

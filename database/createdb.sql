@@ -39,7 +39,7 @@ ALTER TABLE meters ADD CONSTRAINT ux_meters_pin UNIQUE (pin);
 
 CREATE TABLE pulse_readings (
   meter_ref   SMALLINT     NOT NULL,
-  timestamp   TIMESTAMP(3) NOT NULL,
+  timestamp   TIMESTAMP    NOT NULL,
   delta       MEDIUMINT    NULL
 ) ENGINE = MYISAM;
 
