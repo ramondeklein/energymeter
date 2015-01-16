@@ -28,6 +28,8 @@ CREATE TABLE meters (
   description  VARCHAR(100) NOT NULL,
   unit         VARCHAR(20)  NOT NULL,
   pin          TINYINT      NOT NULL,
+  input_type   TINYINT      NOT NULL DEFAULT 0,    -- 0: Unspecified, 1: Pull-down, 2: Pull-up
+  event_type   TINYINT      NOT NULL DEFAULT 0,    -- 0: Both, 1: Rising, 2: Falling
   bounce_time  SMALLINT     NOT NULL DEFAULT 10,	
   pulse_value  SMALLINT     NOT NULL DEFAULT 1,
   pulse_factor SMALLINT     NOT NULL DEFAULT 0,
@@ -40,7 +42,8 @@ ALTER TABLE meters ADD CONSTRAINT ux_meters_pin UNIQUE (pin);
 CREATE TABLE pulse_readings (
   meter_ref   SMALLINT     NOT NULL,
   timestamp   TIMESTAMP    NOT NULL,
-  delta       MEDIUMINT    NULL
+  milli_sec   SMALLINT     NOT NULL,
+  delta       INT          NOT NULL
 ) ENGINE = MYISAM;
 
 ALTER TABLE pulse_readings ADD CONSTRAINT FOREIGN KEY fk_pulse_readings_meter(meter_ref) REFERENCES meters(id) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -20,8 +20,11 @@ liveMode = Settings.get_bool('metering:live_mode')
 
 # Import the GPIO module when not running in simulation
 if liveMode:
-    import RPi.GPIO as GPIO
     logger.info('Running in live mode')
+    try:
+        import RPi.GPIO as GPIO
+    except RuntimeError:
+        print("Error importing RPi.GPIO. Make sure you run this script with root privileges.")
 else:
     logger.info('Running in simulation mode (use keyboard to generate pulses).')
 
@@ -38,7 +41,7 @@ def setup_pins():
 
     # Iterate over each meter
     cur = Database.cursor()
-    cur.execute("SELECT id, pin, description, bounce_time FROM meters")
+    cur.execute("SELECT id, pin, description, bounce_time, input_type, event_type FROM meters")
     rows = cur.fetchall()
 
     key = '1'
@@ -48,6 +51,8 @@ def setup_pins():
         pin = rows[1]
         description = rows[2]
         bounce_time = rows[3]
+        input_type = rows[4]
+        event_type = rows[5]
 
         # Save info in the dictionary
         if liveMode and (pin >= 0):
@@ -58,10 +63,30 @@ def setup_pins():
                 pinInfo = pinInfoDict[channel]
                 pulseLogging.log_pulse(pinInfo['meter'],1)
 
-            # Initialize GPIO pins (TODO: Add FALLING/RAISING support)
-            GPIO.setup(pin, GPIO.IN)
-            GPIO.add_event_detect(pin, GPIO.FALLING, callback=cb_gpio_callback, bouncetime=bounce_time)
-            logger.info('Setting GPIO for "' + description + '": pin #' + str(pin))
+            # Determine the pull-up/down setting
+            if input_type == 1:
+                pull_up_down = GPIO.PUD_DOWN
+                pull_up_down_str = 'pull-down'
+            elif input_type == 2:
+                pull_up_down = GPIO.PUD_UP
+                pull_up_down_str = 'pull-up'
+            else:
+                pull_up_down = GPIO.PUD_OFF
+                pull_up_down_str = 'no pull-up/down'
+
+            # Determine the event-type
+            if event_type == 1:
+                edge = GPIO.RISING
+                edge_str = 'rising edge'
+            elif input_type == 2:
+                edge = GPIO.FALLING
+                edge_str = 'falling edge'
+            else:
+                edge = GPIO.BOTH
+                edge_str = 'both edges'
+            GPIO.setup(pin, GPIO.IN, pull_up_down=pull_up_down)
+            GPIO.add_event_detect(pin, edge, callback=cb_gpio_callback, bouncetime=bounce_time)
+            logger.info('{}: Pin {}, {}, {}, bounce: {}ms'.format(description, pin, pull_up_down_str, edge_str, bounce_time))
 
         # Assign a key to the meter
         keyInfoDict[key] = { 'meter': id, 'description': description }
