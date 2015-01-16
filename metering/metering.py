@@ -2,7 +2,7 @@
 
 # Setup logging
 import logging
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s:%(thread)d:%(levelname)s:%(message)s', filename='metering.log', level=logging.DEBUG)
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -85,7 +85,10 @@ def setup_pins():
                 edge = GPIO.BOTH
                 edge_str = 'both edges'
             GPIO.setup(pin, GPIO.IN, pull_up_down=pull_up_down)
-            GPIO.add_event_detect(pin, edge, callback=cb_gpio_callback, bouncetime=bounce_time)
+            if bounce_time > 0:
+                GPIO.add_event_detect(pin, edge, callback=cb_gpio_callback, bouncetime=bounce_time)
+            else:
+                GPIO.add_event_detect(pin, edge, callback=cb_gpio_callback)
             logger.info('{}: Pin {}, {}, {}, bounce: {}ms'.format(description, pin, pull_up_down_str, edge_str, bounce_time))
 
         # Assign a key to the meter

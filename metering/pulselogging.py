@@ -31,7 +31,7 @@ class PulseLogging:
         for duration in self.durations:
             meter[duration] = {
                 'last_period': None,
-                'periods_counted': 0
+                'complete': False
             }
             # TODO: Add a timer to make sure the pulses are flushed when the meter is (almost) not triggering
 
@@ -70,15 +70,15 @@ class PulseLogging:
                   meter_duration['pulses'] = meter_duration['pulses']+increment
               else:
                   # If we had a previous period, then it's complete now and we can save it. We don't
-                  # save the first counted period, because it will probably be incomplete.
+                  # save the invalid periods, because they contain incomplete data.
                   if last_period:
                       pulses = meter_duration['pulses']
-                      if meter_duration['periods_counted'] > 0:
+                      if meter_duration['complete']:
                           cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,pulses) VALUES(%s,%s,%s,%s)", (meter_id, duration, last_period, pulses));
                           logger.debug("Pulse duration written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, last_period, duration, pulses))
                       else:
-                          logger.debug("First pulse duration not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, last_period, duration, pulses))
-                      meter_duration['periods_counted'] += 1
+                          logger.debug("Incomplete duration record is not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter['description'], meter_id, last_period, duration, pulses))
+                      meter_duration['complete'] = True
   
                   # Initialize the new period
                   meter_duration['last_period'] = current_period

@@ -58,3 +58,6 @@ CREATE TABLE pulse_readings_per_duration (
 ) ENGINE = MYISAM;
 
 ALTER TABLE pulse_readings_per_duration ADD CONSTRAINT FOREIGN KEY fk_pulse_readings_per_duration_meter(meter_ref) REFERENCES meters(id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE USER 'energymeter'@'%' IDENTIFIED BY 'em2015';
+GRANT ALL PRIVILEGES ON metering.* TO 'energymeter'@'%' WITH GRANT OPTION;
