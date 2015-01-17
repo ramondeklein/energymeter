@@ -48,7 +48,7 @@ def init():
                             logger.debug('Initializing GPIO for meter %d "%s"' % (meter.id, meter.description))
                             meter.init_gpio()
                         else:
-                            meter.simulation_key = chr(ord('0') + meter_index)
+                            meter.simulation_key = chr(ord('1') + meter_index)
 
                 except Exception as exc:
                     logger.error('Error during configuration of meter %d "%s": %s' % (meter.id, meter.description, exc.message))
