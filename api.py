@@ -3,7 +3,7 @@ from log import logging
 
 # Import modules
 import MySQLdb
-import time
+import math
 import datetime
 import dateutil.parser
 from contextlib import closing
@@ -40,7 +40,6 @@ def get_sql_timestamp(dt):
 
 
 def from_sql_utc(dt):
-    dt = dateutil.parser.parse(dt)
     dt = dt.replace(tzinfo=None)
     return (dt - epoch).total_seconds() * 1000
 
@@ -81,9 +80,9 @@ def init_api(app):
             cur.execute("SELECT timestamp, delta FROM pulse_readings WHERE meter_ref = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, utc_start, utc_end));
             rows = cur.fetchall()
             return jsonify({
-                'start': from_sql_utc(utc_start),
-                'end': from_sql_utc(utc_end),
-                'pulses': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
+                'start': utc_start,
+                'end': utc_end,
+                'pulses': map(lambda r: [from_sql_utc(r[0]), math.ceil((3600.0 / float(r[1])) * 1000) if r[1] else 0.0], rows)
             })
 
 
@@ -91,14 +90,14 @@ def init_api(app):
     def get_pulses_by_duration(meter_id, duration):
         # Obtain the period
         precision = 0
-        [utc_start, utc_end] = get_period(precision)
+        [utc_start, utc_end] = get_period()
 
         # Obtain duration readings
         with closing(get_db().cursor()) as cur:
             cur.execute("SELECT timestamp, pulses FROM pulse_readings_per_duration WHERE meter_ref = %s AND duration = %s timestamp >= %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, duration, utc_start, utc_end));
             rows = cur.fetchall()
             return jsonify({
-                'start': from_sql_utc(utc_start),
-                'end': from_sql_utc(utc_end),
+                'start': utc_start,
+                'end': utc_end,
                 'pulses': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
             })

@@ -12,4 +12,4 @@ dist/
 
 # Temporary build directories
 /website/.tmp/
-/website/static-dist/
+#/website/static-dist/
