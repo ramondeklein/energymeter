@@ -245,12 +245,12 @@ module.exports = (grunt) ->
           base: '<%= paths.dist %>'
 
     # Uncomment the following block when debugging the dist version
-    uglify:
-      options:
-        mangle: false
-        compress: false
-        beautify: true
-        preserveComments: 'all'
+#    uglify:
+#      options:
+#        mangle: false
+#        compress: false
+#        beautify: true
+#        preserveComments: 'all'
 
     modernizr:
       app:
