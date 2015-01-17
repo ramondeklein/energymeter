@@ -65,13 +65,12 @@ def init():
             while True:
                 time.sleep(1000)
         else:
+            from terminal import getch
+
             # Show that we're logging events
             print 'Logging events until \'q\' is pressed'
             for meter in meters:
                 print '- %s: %s' % (meter.simulation_key, meter.description)
-
-            # Import helper method
-            from emhelpers import getch
 
             # Repeat until 'q' is pressed
             ch = getch()
