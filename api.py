@@ -3,7 +3,6 @@ from log import logging
 
 # Import modules
 import MySQLdb
-import math
 import datetime
 import dateutil.parser
 from contextlib import closing
@@ -41,7 +40,7 @@ def get_sql_timestamp(dt):
 
 def from_sql_utc(dt):
     dt = dt.replace(tzinfo=None)
-    return (dt - epoch).total_seconds() * 1000
+    return int((dt - epoch).total_seconds() * 1000)
 
 
 def get_period():
@@ -68,8 +67,36 @@ def get_period():
     # Convert datetime to UTC
     return [start, end]
 
+def find_meters(meter_id=None):
+    from config import configuration
+    from meter import Meter
+
+    meters = []
+    for section in configuration.sections():
+        items = section.split(':')
+        if (len(items) is 2) and items[0] == 'meter':
+            if not meter_id or (int(items[1]) == meter_id):
+                meter = Meter(section)
+                meters.append({
+                    'id': meter.id,
+                    'description': meter.description
+                })
+    return meters
 
 def init_api(app):
+
+    @app.route("/api/v1/meter")
+    def get_meters():
+        return jsonify({'meters': find_meters()})
+
+    @app.route("/api/v1/meter/<int:meter_id>")
+    def get_meter(meter_id):
+        meters = find_meters(meter_id)
+        if len(meters) > 0:
+            return jsonify({'meter': meters[0]})
+        else:
+            return jsonify({})
+
     @app.route("/api/v1/pulses/<int:meter_id>")
     def get_pulses(meter_id):
         # Obtain the period
@@ -77,27 +104,43 @@ def init_api(app):
 
         # Obtain pulse readings
         with closing(get_db().cursor()) as cur:
-            cur.execute("SELECT timestamp, delta FROM pulse_readings WHERE meter_ref = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, utc_start, utc_end));
+            cur.execute("SELECT timestamp, power FROM pulse_readings WHERE meter_ref = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, utc_start, utc_end));
             rows = cur.fetchall()
+            nr_of_rows = len(rows)
             return jsonify({
-                'start': utc_start,
-                'end': utc_end,
-                'pulses': map(lambda r: [from_sql_utc(r[0]), math.ceil((3600.0 / float(r[1])) * 1000) if r[1] else 0.0], rows)
+                'start': from_sql_utc(rows[0][0]) if utc_start else utc_start,
+                'end': from_sql_utc(rows[nr_of_rows-1][0]) if utc_start else utc_start,
+                'data': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
             })
 
-
-    @app.route("/api/v1/pulses/<int:meter_id>/<int:duration>")
+    @app.route("/api/v1/duration/<int:meter_id>/<int:duration>")
     def get_pulses_by_duration(meter_id, duration):
         # Obtain the period
-        precision = 0
         [utc_start, utc_end] = get_period()
 
         # Obtain duration readings
         with closing(get_db().cursor()) as cur:
-            cur.execute("SELECT timestamp, pulses FROM pulse_readings_per_duration WHERE meter_ref = %s AND duration = %s timestamp >= %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, duration, utc_start, utc_end));
+            cur.execute("SELECT timestamp, avg_power FROM pulse_readings_per_duration WHERE meter_ref = %s AND duration = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, duration, utc_start, utc_end));
             rows = cur.fetchall()
+            nr_of_rows = len(rows)
             return jsonify({
-                'start': utc_start,
-                'end': utc_end,
-                'pulses': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
+                'start': from_sql_utc(rows[0][0]) if utc_start else utc_start,
+                'end': from_sql_utc(rows[nr_of_rows-1][0]) if utc_start else utc_start,
+                'data': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
+            })
+
+    @app.route("/api/v1/extduration/<int:meter_id>/<int:duration>")
+    def get_pulses_by_duration_ext(meter_id, duration):
+        # Obtain the period
+        [utc_start, utc_end] = get_period()
+
+        # Obtain duration readings
+        with closing(get_db().cursor()) as cur:
+            cur.execute("SELECT timestamp, min_power, avg_power, max_power FROM pulse_readings_per_duration WHERE meter_ref = %s AND duration = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, duration, utc_start, utc_end));
+            rows = cur.fetchall()
+            nr_of_rows = len(rows)
+            return jsonify({
+                'start': from_sql_utc(rows[0][0]) if utc_start else utc_start,
+                'end': from_sql_utc(rows[nr_of_rows-1][0]) if utc_start else utc_start,
+                'data': map(lambda r: [from_sql_utc(r[0]), r[1], r[2], r[3]], rows)
             })

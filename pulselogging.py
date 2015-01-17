@@ -31,6 +31,8 @@ class PulseDurations:
         self.duration = duration
         self.period = None
         self.pulses = 0.0
+        self.min_delta = None
+        self.max_delta = None
         self.complete = False
 
 
@@ -107,11 +109,12 @@ class PulseLogging:
             db = self.get_db()
             with closing(db.cursor()) as cur:
                 # Insert the pulse record
-                cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,milli_sec,delta) VALUES(%s,%s,%s,%s)", (meter.id, get_sql_timestamp(now), int(round(now * 1000)) % 1000, delta))
+                current_power = meter.get_current_from_delta(delta) if delta else 0.0
+                cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,milli_sec,power) VALUES(%s,%s,%s,%s)", (meter.id, get_sql_timestamp(now), int(round(now * 1000)) % 1000, current_power))
 
                 # Log the actual pulse
                 if delta > 0:
-                    logger.debug('%s: Pulse written (delta=%.3f, actual=%d%s)' % (meter.description, delta / 1000.0, int(round((3600.0 / delta) * meter.current_factor)), meter.current_unit))
+                    logger.debug('%s: Pulse written (delta=%.3fms, actual=%d%s)' % (meter.description, delta / 1000.0, current_power, meter.current_unit))
                 else:
                     logger.debug('%s: Initial pulse written' % meter.description)
 
@@ -129,6 +132,7 @@ class PulseLogging:
                         # Initialize the period
                         pulse_duration.period = this_period
                         pulse_duration.pulses = 0.0
+                        pulse_duration.min_delta = pulse_duration.max_delta = None
                         pulse_duration.complete = False
                     else:
                         while this_period > pulse_duration.period:
@@ -148,20 +152,36 @@ class PulseLogging:
                             # This period's duration should be subtracted from the delta
                             pulse_weight -= period_pulse_weight
 
+                            # Update min/max delta values
+                            if not pulse_duration.min_delta or delta < pulse_duration.min_delta:
+                                pulse_duration.min_delta = delta
+                            if not pulse_duration.max_delta or delta > pulse_duration.max_delta:
+                                pulse_duration.max_delta = delta
+
                             # If the pulse duration was complete, then we log it in the database
                             datetime = get_sql_timestamp(pulse_duration.period)
+                            avg_power = meter.get_current_from_pulses(pulse_duration.duration, pulse_duration.pulses)
+                            min_power = meter.get_current_from_delta(pulse_duration.max_delta) if pulse_duration.max_delta else 0.0
+                            max_power = meter.get_current_from_delta(pulse_duration.min_delta) if pulse_duration.min_delta else 0.0
                             if pulse_duration.complete:
-                                cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,pulses) VALUES(%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, pulse_duration.pulses));
-                                logger.debug("%s: Pulse duration written (%s [%ds], %.2f pulses)" % (meter.description, datetime, pulse_duration.duration, pulse_duration.pulses))
+                                cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,min_power,avg_power,max_power) VALUES(%s,%s,%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, min_power, avg_power, max_power));
+                                logger.debug("%s: Pulse duration written (%s [%ds], avg %d%s, %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, avg_power, meter.current_unit, min_power, max_power, meter.current_unit))
                             else:
-                                logger.debug("%s: Incomplete duration record is not written (%s [%ds], %.2f pulses)" % (meter.description, datetime, pulse_duration.duration, pulse_duration.pulses))
+                                logger.debug("%s: Incomplete duration record is not written (%s [%ds], %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, min_power, max_power, meter.current_unit))
 
                             pulse_duration.period += pulse_duration.duration
                             pulse_duration.pulses = 0.0
+                            pulse_duration.min_delta = pulse_duration.max_delta = None
                             pulse_duration.complete = True
 
                         # Increment the number of pulses
                         pulse_duration.pulses += pulse_weight
+
+                        # Update min/max delta values
+                        if not pulse_duration.min_delta or delta < pulse_duration.min_delta:
+                            pulse_duration.min_delta = delta
+                        if not pulse_duration.max_delta or delta > pulse_duration.max_delta:
+                            pulse_duration.max_delta = delta
 
                 # Commit changes
                 db.commit()
@@ -175,8 +195,8 @@ class PulseLogging:
             self.db_instance = None
 
             # Reset complete status for the period
-            for duration in self.durations:
-                pulse_duration.complete = False
+            for duration in pulse_meter.durations:
+                duration.complete = False
 
         # Set the last pulse to the current pulse
         pulse_meter.last_pulse = now

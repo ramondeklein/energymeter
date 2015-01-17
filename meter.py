@@ -5,7 +5,7 @@ from config import configuration
 logger = logging.getLogger(__name__)
 
 class Meter:
-    def __init__(self, section, callback):
+    def __init__(self, section, callback=None):
         # Determine the identifier
         self.id = int(section.split(':')[1])
 
@@ -126,3 +126,9 @@ class Meter:
         except Exception as exc:
             logger.error('Unable to configure GPIO pin %d (%s): %s' % (self.gpio_pin, self.description, exc.message))
             raise
+
+    def get_current_from_pulses(self, duration, pulses):
+        return (pulses * self.current_factor) / duration
+
+    def get_current_from_delta(self, delta):
+        return int(round(self.current_factor / (delta / 1000.0)))

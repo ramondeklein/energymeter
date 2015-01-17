@@ -1,29 +1,38 @@
 app = angular.module 'energyMonitor'
 
 app.controller 'EnergyChartController', ($scope, ReadingService) ->
+  $scope.duration = 60
   $scope.period =
-    start: new Date(2015,0,1)
-    end: new Date(2015,1,1)
+    start: null
+    end: null
 
-  ReadingService.getPulses 1, $scope.period.start, $scope.period.end
-  .then (electricity) ->
-    ReadingService.getPulses 2, $scope.period.start, $scope.period.end
-    .then (gas) ->
-        $scope.period.start = if electricity.start < gas.start then electricity.start else gas.start
-        $scope.period.end = if electricity.end > gas.end then electricity.start else gas.start
+  # Set options
+  Highcharts.setOptions
+    global:
+      useUTC: false         # Show everything in the timezone of the browser
 
-        # Create the chart
-        $('#container').highcharts 'StockChart',
-          rangeSelector:
-            selected: 1
-          title:
-            text: 'Energy overview (times in UTC)'
-          series: [
-            name : 'Electricity'
-            data : electricity.pulses
-          ,
-            name : 'Gas'
-            data : gas.pulses
-          ]
+  # Create the chart
+  chart = new Highcharts.StockChart
+    chart:
+      renderTo: 'container',
+    navigator:
+      adaptToUpdatedData: false
+    title:
+      text: 'Energy overview (times in UTC)'
 
-        $scope.start = null
+  ReadingService.getMeters().then (meters) ->
+    addMeter = (meter) ->
+      serie = chart.addSeries
+        name: meter.description
+
+      ReadingService.getPulsesByDuration meter.id, $scope.duration, $scope.period.start, $scope.period.end
+      .then (result) ->
+        serie.setData result.data
+
+        # Update period based on the returned data
+        if !$scope.period.start or result.start < $scope.period.start
+          $scope.period.start = result.start
+        if !$scope.period.end or result.end > $scope.period.end
+          $scope.period.end = result.end
+
+    addMeter meter for meter in meters

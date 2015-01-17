@@ -22,7 +22,7 @@ CREATE TABLE pulse_readings (
   meter_ref   SMALLINT     NOT NULL,
   timestamp   TIMESTAMP    NOT NULL,
   milli_sec   SMALLINT     NOT NULL,    -- Required, because older MySQL version don't support TIMESTAMP(3)
-  delta       INT          NOT NULL,
+  power       FLOAT        NOT NULL,
 
   PRIMARY KEY (meter_ref, timestamp, milli_sec)
 ) ENGINE = MYISAM;
@@ -32,8 +32,10 @@ CREATE TABLE pulse_readings_per_duration (
   meter_ref    SMALLINT    NOT NULL,
   duration     SMALLINT    NOT NULL,
   timestamp    TIMESTAMP   NOT NULL,
-  pulses       FLOAT       NOT NULL,
-    
+  min_power    FLOAT       NOT NULL,
+  avg_power    FLOAT       NOT NULL,
+  max_power    FLOAT       NOT NULL,
+
   PRIMARY KEY (meter_ref, duration, timestamp)
 ) ENGINE = MYISAM;
 
