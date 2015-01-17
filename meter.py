@@ -95,7 +95,8 @@ class Meter:
             assert False
 
         # Setup the callback
-        def gpio_callback():
+        def gpio_callback(channel):
+            assert self.gpio_pin == channel
             self.callback(self)
 
         # Actually try to configure the input

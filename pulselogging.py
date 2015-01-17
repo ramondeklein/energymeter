@@ -86,9 +86,9 @@ class PulseLogging:
                 # Insert pulse record
                 cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,milli_sec,delta) VALUES(%s,%s,%s,%s)", (meter.id, get_sql_timestamp(now), int(round(now * 1000)) % 1000, delta))
                 if delta > 0:
-                    logger.debug('Pulse written (pulse_meter="%s", delta=%fs, actual=%f%s)' % (meter.description, delta, (3600.0 / delta) * meter.current_factor, meter.current_unit))
+                    logger.debug('%s: Pulse written (delta=%d.%03ds, actual=%d%s)' % (meter.description, int(delta / 1000), int(delta % 1000), int(round((3600.0 / delta) * meter.current_factor)), meter.current_unit))
                 else:
-                    logger.debug('Initial pulse written (pulse_meter="%s")' % (meter.description))
+                    logger.debug('%s: Initial pulse written' % (meter.description))
 
                 # Save all durations
                 for duration in self.durations:
@@ -105,9 +105,9 @@ class PulseLogging:
                             pulses = meter_duration['pulses']
                             if meter_duration['complete']:
                                 cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,pulses) VALUES(%s,%s,%s,%s)", (meter.id, duration, last_period, pulses));
-                                logger.debug("Pulse duration written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter.description, meter.id, last_period, duration, pulses))
+                                logger.debug("{}: Pulse duration written ({} [{}s], {} pulses)".format(meter.description, last_period, duration, pulses))
                             else:
-                                logger.debug("Incomplete duration record is not written (meter={}[{}], timestamp={} [duration:{}s], pulses={})".format(meter.description, meter.id, last_period, duration, pulses))
+                                logger.debug("{}: Incomplete duration record is not written ({} [{}s], {} pulses)".format(meter.description, last_period, duration, pulses))
                             meter_duration['complete'] = True
 
                         # Initialize the new period

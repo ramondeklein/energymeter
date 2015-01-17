@@ -15,9 +15,6 @@ logger = logging.getLogger(__name__)
 
 def pulse_callback(meter):
     # Log the pulse
-    logger.debug('Pulse "%s" detected.' % (meter.description))
-
-    # Log the pulse
     pl.log_pulse(meter)
 
 
