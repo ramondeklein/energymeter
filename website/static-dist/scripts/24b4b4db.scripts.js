@@ -25,7 +25,7 @@
                 if (end) {
                     params.end = end;
                 }
-                $http.get("http://localhost:8888/api/v1/pulses/" + meter, {
+                $http.get("/api/v1/pulses/" + meter, {
                     params: params
                 }).success(function(data, status, headers, config) {
                     return dfd.resolve(data);

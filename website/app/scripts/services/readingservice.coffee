@@ -8,7 +8,7 @@ app.service 'ReadingService', ($http, $q) ->
     params.start = start if start
     params.end = end if end
 
-    $http.get "http://localhost:8888/api/v1/pulses/#{meter}", params: params
+    $http.get "/api/v1/pulses/#{meter}", params: params
       .success (data, status, headers, config) ->
         # This callback will be called asynchronously when the response is available
         dfd.resolve data
