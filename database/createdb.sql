@@ -3,51 +3,31 @@
 # Always use UTC timezone for all database
 SET time_zone = '+0:00';
 
-DROP DATABASE metering;
+# Drop the old database
+DROP DATABASE IF EXISTS energymeter;
 
 # Create the database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS metering;
-USE metering;
+CREATE DATABASE energymeter;
+USE energymeter;
 
 # Create the versions table
 CREATE TABLE IF NOT EXISTS versions (
   version   INT       NOT NULL,
   timestamp TIMESTAMP NOT NULL
-);
+) ENGINE = MYISAM;
 INSERT versions(version,timestamp) VALUES(1,NOW());
 
-CREATE TABLE settings (
-  setting      VARCHAR(25) NOT NULL,
-  value        VARCHAR(100),
-  PRIMARY KEY (setting)
-) ENGINE = MYISAM;
-
-# Create the meter definition table
-CREATE TABLE meters (
-  id           SMALLINT     NOT NULL AUTO_INCREMENT,
-  description  VARCHAR(100) NOT NULL,
-  unit         VARCHAR(20)  NOT NULL,
-  pin          TINYINT      NOT NULL,
-  input_type   TINYINT      NOT NULL DEFAULT 0,    -- 0: Unspecified, 1: Pull-down, 2: Pull-up
-  event_type   TINYINT      NOT NULL DEFAULT 0,    -- 0: Both, 1: Rising, 2: Falling
-  bounce_time  SMALLINT     NOT NULL DEFAULT 10,	
-  pulse_value  SMALLINT     NOT NULL DEFAULT 1,
-  pulse_factor SMALLINT     NOT NULL DEFAULT 0,
-  PRIMARY KEY (id)
-) ENGINE = MYISAM;
-
-ALTER TABLE meters ADD CONSTRAINT ux_meters_description UNIQUE (description);
-ALTER TABLE meters ADD CONSTRAINT ux_meters_pin UNIQUE (pin);
-
+# Create the pulse_readings table (contains a record for each pulse)
 CREATE TABLE pulse_readings (
   meter_ref   SMALLINT     NOT NULL,
   timestamp   TIMESTAMP    NOT NULL,
-  milli_sec   SMALLINT     NOT NULL,
-  delta       INT          NOT NULL
+  milli_sec   SMALLINT     NOT NULL,    -- Required, because older MySQL version don't support TIMESTAMP(3)
+  delta       INT          NOT NULL,
+
+  PRIMARY KEY (meter_ref, timestamp, milli_sec)
 ) ENGINE = MYISAM;
 
-ALTER TABLE pulse_readings ADD CONSTRAINT FOREIGN KEY fk_pulse_readings_meter(meter_ref) REFERENCES meters(id) ON DELETE CASCADE ON UPDATE CASCADE;
-
+# Create the pulse_readings_per_duration table (contains the number of pulses per duration)
 CREATE TABLE pulse_readings_per_duration (
   meter_ref    SMALLINT    NOT NULL,
   duration     SMALLINT    NOT NULL,
@@ -57,7 +37,6 @@ CREATE TABLE pulse_readings_per_duration (
   PRIMARY KEY (meter_ref, duration, timestamp)
 ) ENGINE = MYISAM;
 
-ALTER TABLE pulse_readings_per_duration ADD CONSTRAINT FOREIGN KEY fk_pulse_readings_per_duration_meter(meter_ref) REFERENCES meters(id) ON DELETE CASCADE ON UPDATE CASCADE;
-
-CREATE USER 'energymeter'@'%' IDENTIFIED BY 'em2015';
-GRANT ALL PRIVILEGES ON metering.* TO 'energymeter'@'%' WITH GRANT OPTION;
+# Create new user
+CREATE USER 'emuser'@'%' IDENTIFIED BY 'em2015';
+GRANT ALL PRIVILEGES ON energymeter.* TO 'emuser'@'%' WITH GRANT OPTION;
