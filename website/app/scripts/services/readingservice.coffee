@@ -2,7 +2,8 @@ app = angular.module 'energyMonitor'
 
 app.service 'ReadingService', ($http, $q) ->
 
-  apiServer = "http://localhost:8888"
+  #apiServer = "http://localhost:8888"
+  apiServer = "/"
 
   getMeters: ->
     dfd = $q.defer()
