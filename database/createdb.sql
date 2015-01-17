@@ -52,7 +52,7 @@ CREATE TABLE pulse_readings_per_duration (
   meter_ref    SMALLINT    NOT NULL,
   duration     SMALLINT    NOT NULL,
   timestamp    TIMESTAMP   NOT NULL,
-  pulses       SMALLINT    NOT NULL DEFAULT 0,
+  pulses       FLOAT       NOT NULL,
     
   PRIMARY KEY (meter_ref, duration, timestamp)
 ) ENGINE = MYISAM;

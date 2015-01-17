@@ -36,9 +36,23 @@ class Meter:
         # Log the units
         logger.info('- Each pulse is %f%s (current unit shown as "%s")' % (self.pulse_value, self.unit, self.current_unit))
 
+        # Obtain the durations
+        self.durations = []
+        if configuration.has_option(section, "durations"):
+            import re
+
+            durations = re.split('[^0-9]', configuration.get(section, "durations"))
+            for duration in durations:
+                self.durations.append(int(duration))
+
+        if len(self.durations) > 0:
+            logger.info('- Logging saved per %s seconds' % ', '.join(map(lambda d: str(d), self.durations)))
+        else:
+            logger.info('- Only pulses are logged (no aggregation occurs).')
+
         # Determine the GPIO pin
         self.gpio_pin = configuration.getint(section, "gpio_pin")
-        logger.info('- Using GPIO pin %d' % (self.gpio_pin))
+        logger.info('- Using GPIO pin %d' % self.gpio_pin)
 
         # Determine GPIO pull-up/down
         gpio_pull_mode = configuration.get(section, "gpio_pull_mode") if configuration.get(section, "gpio_pull_mode") else None
@@ -47,7 +61,7 @@ class Meter:
             if (gpio_pull_mode != 'PULL_UP') and (gpio_pull_mode != 'PULL_DOWN'):
                 raise Exception('Invalid value "%s" for option "gpio_pull_mode" in section [%s]' % (gpio_pull_mode, section))
             self.gpio_pull_mode = gpio_pull_mode
-            logger.info('- Using GPIO %s mode' % (self.gpio_pull_mode))
+            logger.info('- Using GPIO %s mode' % self.gpio_pull_mode)
         else:
             logger.warn('- No pull-up/down specified (signal might float).')
             self.gpio_pull_mode = None
@@ -58,12 +72,12 @@ class Meter:
         if (gpio_trigger_edge != 'RISING') and (gpio_trigger_edge != 'FALLING') and (gpio_trigger_edge != 'BOTH'):
             raise Exception('Invalid value "%s" for option "gpio_trigger_edge" in section [%s]' % (gpio_trigger_edge, section))
         self.gpio_trigger_edge = gpio_trigger_edge
-        logger.info('- Using GPIO %s trigger' % (self.gpio_trigger_edge))
+        logger.info('- Using GPIO %s trigger' % self.gpio_trigger_edge)
 
         # Determine bounce time
         self.gpio_bounce_time = configuration.getint(section, "gpio_bounce_time") if configuration.get(section, "gpio_bounce_time") else 0
         if self.gpio_bounce_time > 0:
-            logger.info('- Input trigger has %dms bounce time' % (self.gpio_bounce_time))
+            logger.info('- Input trigger has %dms bounce time' % self.gpio_bounce_time)
         else:
             logger.info('- Input trigger has no bounce time')
 

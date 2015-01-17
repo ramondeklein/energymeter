@@ -1,36 +1,66 @@
-import MySQLdb
-from contextlib import closing
-import time
-import datetime
 import logging
-
-from config import configuration
+import MySQLdb
+import time
+from contextlib import closing
 
 
 # Setup logger
 logger = logging.getLogger(__name__)
 
+
 def get_sql_timestamp(t):
     return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t))
 
-def get_period(now, duration):
-    gm_time = time.gmtime(now)
-    seconds = (((gm_time.tm_hour * 60) + gm_time.tm_min) * 60) + gm_time.tm_sec
-    start_seconds = int(seconds / duration) * duration
-    return datetime.datetime(gm_time.tm_year, gm_time.tm_mon, gm_time.tm_mday, int(start_seconds / (60*60)), int(start_seconds / 60) % 60, start_seconds % 60)
+
+def get_start_period(t, duration):
+    # Determine the seconds in the current day
+    gm_time = time.gmtime(t)
+    seconds_in_day = int((((gm_time.tm_hour * 60) + gm_time.tm_min) * 60) + gm_time.tm_sec)
+
+    # Store the date part (number of seconds from epoch)
+    date_offset = int(t - seconds_in_day)
+    period_index = int(seconds_in_day / duration)
+
+    # Determine the current period
+    return float(date_offset + (period_index * duration))
+
+
+class PulseDurations:
+    def __init__(self, pulse_meter, duration):
+        self.pulse_meter = pulse_meter
+        self.duration = duration
+        self.period = None
+        self.pulses = 0.0
+        self.complete = False
+
+
+class PulseMeter:
+    def __init__(self, meter):
+        # Save the meter
+        self.meter = meter
+
+        # Keep track of the last pulse
+        self.last_pulse = None
+
+        # Create a record for each duration
+        self.durations = []
+        for duration in meter.durations:
+            self.durations.append(PulseDurations(self, duration))
 
 
 class PulseLogging:
-    def __init__(self, durations = [60, 15 * 60, 60 * 60]):
+
+    def __init__(self):
         # Initialize database
         self.db_instance = self.get_db(True)
 
         # Initialize durations
-        self.durations = durations
         self.pulse_meters = {}
 
-    def get_db(self, force_connect = False):
+    def get_db(self, force_connect=False):
         if force_connect or not self.db_instance:
+            from config import configuration
+
             # Determine the current configuration
             hostname = configuration.get('database', 'hostname') if configuration.has_option('database', 'hostname') else 'localhost'
             port = configuration.getint('database', 'port') if configuration.has_option('database', 'port') else 2206
@@ -45,81 +75,100 @@ class PulseLogging:
                 # Always use UTC
                 self.db_instance.cursor().execute("SET time_zone = '+0:00'")
             except Exception as exc:
-                logger.error('Unable to establish database connection: %s' % (exc.message))
+                logger.error('Unable to establish database connection: %s' % exc.message)
                 raise
 
         return self.db_instance
 
-    def log_pulse(self, meter, increment = 1):
+    def log_pulse(self, meter):
         # Save the current timestamp
         now = time.time()
 
         # Check if the meter exists
         pulse_meter = self.pulse_meters.get(meter.id)
-        if not pulse_meter:
-            # Create a new meter object
-            pulse_meter = self.pulse_meters[meter.id] = {
-                'meter': meter,
-                'last_pulse': 0
-            }
-            for duration in self.durations:
-                pulse_meter[duration] = {
-                    'last_period': None,
-                    'complete': False
-                }
+        if pulse_meter:
+            # Determine the duration between this pulse and the previous pulse
+            delta = int((now - pulse_meter.last_pulse)*1000)
 
-        # Now can be before lastPulse if the clock is adjusted
-        last_pulse = pulse_meter['last_pulse']
-        if last_pulse:
-            delta = int((now - last_pulse)*1000) if now > last_pulse else 0
+            # If the time has changed (i.e. clock adjustment due to NTP), then
+            # we might get a negative time. In that case we should adjust the
+            # delta again.
+            if delta < 1:
+                delta = 1
         else:
+            # The pulse meter doesn't exist, so we create it.
+            pulse_meter = self.pulse_meters[meter.id] = PulseMeter(meter)
+
+            # Because there was no meter, we can't have a previous pulse
             delta = 0
-        pulse_meter['last_pulse'] = now
 
         # Save the pulse into the database
         try:
             db = self.get_db()
             with closing(db.cursor()) as cur:
-                # Calculate the actual power
-                actual_power = 0
-
-                # Insert pulse record
+                # Insert the pulse record
                 cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,milli_sec,delta) VALUES(%s,%s,%s,%s)", (meter.id, get_sql_timestamp(now), int(round(now * 1000)) % 1000, delta))
+
+                # Log the actual pulse
                 if delta > 0:
-                    logger.debug('%s: Pulse written (delta=%d.%03ds, actual=%d%s)' % (meter.description, int(delta / 1000), int(delta % 1000), int(round((3600.0 / delta) * meter.current_factor)), meter.current_unit))
+                    logger.debug('%s: Pulse written (delta=%.3f, actual=%d%s)' % (meter.description, delta / 1000.0, int(round((3600.0 / delta) * meter.current_factor)), meter.current_unit))
                 else:
-                    logger.debug('%s: Initial pulse written' % (meter.description))
+                    logger.debug('%s: Initial pulse written' % meter.description)
 
-                # Save all durations
-                for duration in self.durations:
-                    meter_duration = pulse_meter[duration]
-                    last_period = meter_duration['last_period']
-                    current_period = get_period(now, duration)
-                    if last_period and (last_period == current_period):
-                        # Increment the number of pulses
-                        meter_duration['pulses'] = meter_duration['pulses']+increment
+                # Update all durations
+                for pulse_duration in pulse_meter.durations:
+                    # Get the last known period
+                    this_period = get_start_period(now, pulse_duration.duration)
+
+                    # Normally a pulse has weight 1, unless it is distributed among multiple periods. Then
+                    # the weight will be distributed evenly accross these periods
+                    pulse_weight = 1.0
+
+                    # Check if we have moved to a new period
+                    if not pulse_duration.period:
+                        # Initialize the period
+                        pulse_duration.period = this_period
+                        pulse_duration.pulses = 0.0
+                        pulse_duration.complete = False
                     else:
-                        # If we had a previous period, then it's complete now and we can save it. We don't
-                        # save the invalid periods, because they contain incomplete data.
-                        if last_period:
-                            pulses = meter_duration['pulses']
-                            if meter_duration['complete']:
-                                cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,pulses) VALUES(%s,%s,%s,%s)", (meter.id, duration, last_period, pulses));
-                                logger.debug("{}: Pulse duration written ({} [{}s], {} pulses)".format(meter.description, last_period, duration, pulses))
-                            else:
-                                logger.debug("{}: Incomplete duration record is not written ({} [{}s], {} pulses)".format(meter.description, last_period, duration, pulses))
-                            meter_duration['complete'] = True
+                        while this_period > pulse_duration.period:
+                            # The period has passed, so this pulse should be distributed
+                            # across the periods in-between.
+                            period_pulse_duration = (pulse_duration.period + pulse_duration.duration) - pulse_meter.last_pulse
+                            if period_pulse_duration > pulse_duration.duration:
+                                period_pulse_duration = pulse_duration.duration
 
-                        # Initialize the new period
-                        meter_duration['last_period'] = current_period
-                        meter_duration['pulses'] = increment
+                            # Determine the pulse weight
+                            period_pulse_weight = (period_pulse_duration * 1000.0) / delta
+
+                            # Increment the number of pulses in this period based on the period that this
+                            # pulse was inside the period
+                            pulse_duration.pulses += period_pulse_weight
+
+                            # This period's duration should be subtracted from the delta
+                            pulse_weight -= period_pulse_weight
+
+                            # If the pulse duration was complete, then we log it in the database
+                            datetime = get_sql_timestamp(pulse_duration.period)
+                            if pulse_duration.complete:
+                                cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,pulses) VALUES(%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, pulse_duration.pulses));
+                                logger.debug("%s: Pulse duration written (%s [%ds], %.2f pulses)" % (meter.description, datetime, pulse_duration.duration, pulse_duration.pulses))
+                            else:
+                                logger.debug("%s: Incomplete duration record is not written (%s [%ds], %.2f pulses)" % (meter.description, datetime, pulse_duration.duration, pulse_duration.pulses))
+
+                            pulse_duration.period += pulse_duration.duration
+                            pulse_duration.pulses = 0.0
+                            pulse_duration.complete = True
+
+                        # Increment the number of pulses
+                        pulse_duration.pulses += pulse_weight
 
                 # Commit changes
                 db.commit()
 
         except Exception as exc:
             # Log error
-            logger.error("Unable to log pulse to the database: %s." % (exc.message))
+            logger.error("Unable to log pulse to the database: %s." % exc.message)
             logger.error("Rendering current durations invalid for this meter")
 
             # Reset database
@@ -127,4 +176,7 @@ class PulseLogging:
 
             # Reset complete status for the period
             for duration in self.durations:
-                pulse_meter[duration]['complete'] = False
+                pulse_duration.complete = False
+
+        # Set the last pulse to the current pulse
+        pulse_meter.last_pulse = now
