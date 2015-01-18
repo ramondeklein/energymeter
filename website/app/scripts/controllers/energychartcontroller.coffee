@@ -1,7 +1,8 @@
 app = angular.module 'energyMonitor'
 
-app.controller 'EnergyChartController', ($scope, ReadingService) ->
+app.controller 'EnergyChartController', ($scope, $interval, ReadingService) ->
   $scope.duration = 60
+  $scope.meters = {}
   $scope.period =
     start: null
     end: null
@@ -21,13 +22,20 @@ app.controller 'EnergyChartController', ($scope, ReadingService) ->
       text: 'Energy overview (times in UTC)'
 
   ReadingService.getMeters().then (meters) ->
+    # Add the meter
     addMeter = (meter) ->
+      # Update the meters dictionary, so we have easy access to all its properties
+      $scope.meters[meter.id] = meter
+
+      # Add the series to the chart
       serie = chart.addSeries
         name: meter.description
 
+      # Get all the power readings for this meter from the back-end
+      duration = $scope.duration
       ReadingService.getPulsesByDuration meter.id, $scope.duration, $scope.period.start, $scope.period.end
       .then (result) ->
-        serie.setData result.data
+        serie.setData [item[0], (item[1] * meter.currentFactor) / duration] for item in result.data
 
         # Update period based on the returned data
         if !$scope.period.start or result.start < $scope.period.start
@@ -35,4 +43,17 @@ app.controller 'EnergyChartController', ($scope, ReadingService) ->
         if !$scope.period.end or result.end > $scope.period.end
           $scope.period.end = result.end
 
+    # Method to get the current power readings
+    getCurrentPower = ->
+      #ReadingService.getCurrentPower().then (meters) ->
+      #  for meter in meters
+      #    console.log "#{$scope.meters[meter.id].description}: #{meter.power}"
+
+    # Add all meters
     addMeter meter for meter in meters
+
+    # Get the current power reading
+    getCurrentPower()
+
+    # Obtain the reading every 5 seconds
+    $interval getCurrentPower, 5000

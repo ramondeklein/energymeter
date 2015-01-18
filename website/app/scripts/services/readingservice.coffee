@@ -29,7 +29,14 @@ app.service 'ReadingService', ($http, $q) ->
     params.start = start if start
     params.end = end if end
 
-    $http.get "#{apiServer}/api/v1/duration/#{meter}/#{duration}", params: params
+    $http.get "#{apiServer}/api/v1/usage/#{meter}/#{duration}", params: params
     .success (data) -> dfd.resolve data
     .error -> dfd.reject 'Unable to obtain the meter pulses per duration.'
+    dfd.promise;
+
+  getCurrentPower: ->
+    dfd = $q.defer()
+    $http.get "#{apiServer}/api/v1/readings/last"
+    .success (data) -> dfd.resolve data.meters
+    .error -> dfd.reject 'Unable to obtain the meters.'
     dfd.promise;

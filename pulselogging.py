@@ -109,11 +109,11 @@ class PulseLogging:
             db = self.get_db()
             with closing(db.cursor()) as cur:
                 # Insert the pulse record
-                current_power = meter.get_current_from_delta(delta) if delta else 0.0
-                cur.execute("INSERT INTO pulse_readings(meter_ref,timestamp,milli_sec,power) VALUES(%s,%s,%s,%s)", (meter.id, get_sql_timestamp(now), int(round(now * 1000)) % 1000, current_power))
+                cur.execute("INSERT INTO `pulse_readings`(`meter_ref`,`timestamp`,`milli_sec`,`delta`) VALUES(%s,%s,%s,%s)", (meter.id, get_sql_timestamp(now), int(round(now * 1000)) % 1000, delta))
 
                 # Log the actual pulse
                 if delta > 0:
+                    current_power = meter.get_current_from_delta(delta)
                     logger.debug('%s: Pulse written (delta=%.3fms, actual=%d%s)' % (meter.description, delta / 1000.0, current_power, meter.current_unit))
                 else:
                     logger.debug('%s: Initial pulse written' % meter.description)
@@ -160,12 +160,13 @@ class PulseLogging:
 
                             # If the pulse duration was complete, then we log it in the database
                             datetime = get_sql_timestamp(pulse_duration.period)
-                            avg_power = meter.get_current_from_pulses(pulse_duration.duration, pulse_duration.pulses)
                             min_power = meter.get_current_from_delta(pulse_duration.max_delta) if pulse_duration.max_delta else 0.0
                             max_power = meter.get_current_from_delta(pulse_duration.min_delta) if pulse_duration.min_delta else 0.0
                             if pulse_duration.complete:
-                                cur.execute("INSERT INTO pulse_readings_per_duration(meter_ref,duration,timestamp,min_power,avg_power,max_power) VALUES(%s,%s,%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, min_power, avg_power, max_power));
-                                logger.debug("%s: Pulse duration written (%s [%ds], avg %d%s, %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, avg_power, meter.current_unit, min_power, max_power, meter.current_unit))
+                                usage = meter.get_usage_from_pulses(pulse_duration.pulses)
+                                avg_power = meter.get_current_from_pulses(pulse_duration.duration, pulse_duration.pulses)
+                                cur.execute("INSERT INTO `pulse_readings_per_duration`(`meter_ref`,`duration`,`timestamp`,`usage`,`min_power`,`max_power`) VALUES(%s,%s,%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, usage, min_power, max_power));
+                                logger.debug("%s: Pulse duration written (%s [%ds], usage %f%s, avg %d%s, %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, usage, meter.unit, avg_power, meter.current_unit, min_power, max_power, meter.current_unit))
                             else:
                                 logger.debug("%s: Incomplete duration record is not written (%s [%ds], %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, min_power, max_power, meter.current_unit))
 

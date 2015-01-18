@@ -127,6 +127,9 @@ class Meter:
             logger.error('Unable to configure GPIO pin %d (%s): %s' % (self.gpio_pin, self.description, exc.message))
             raise
 
+    def get_usage_from_pulses(self, pulses):
+        return pulses * self.pulse_value
+
     def get_current_from_pulses(self, duration, pulses):
         return (pulses * self.current_factor) / duration
 

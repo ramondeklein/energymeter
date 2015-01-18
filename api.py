@@ -4,15 +4,26 @@ from log import logging
 # Import modules
 import MySQLdb
 import datetime
+import time
 import dateutil.parser
 from contextlib import closing
 from flask import request, jsonify
+from config import configuration
+from meter import Meter
 
 # Setup logger
 logger = logging.getLogger(__name__)
 
 # Determine epoch
 epoch = datetime.datetime.utcfromtimestamp(0)
+
+# Obtain the list of all meters
+meters = {}
+for section in configuration.sections():
+    items = section.split(':')
+    if (len(items) is 2) and items[0] == 'meter':
+        meter = Meter(section)
+        meters[meter.id] = meter
 
 
 def get_db():
@@ -67,35 +78,19 @@ def get_period():
     # Convert datetime to UTC
     return [start, end]
 
-def find_meters(meter_id=None):
-    from config import configuration
-    from meter import Meter
-
-    meters = []
-    for section in configuration.sections():
-        items = section.split(':')
-        if (len(items) is 2) and items[0] == 'meter':
-            if not meter_id or (int(items[1]) == meter_id):
-                meter = Meter(section)
-                meters.append({
-                    'id': meter.id,
-                    'description': meter.description
-                })
-    return meters
 
 def init_api(app):
 
     @app.route("/api/v1/meter")
     def get_meters():
-        return jsonify({'meters': find_meters()})
-
-    @app.route("/api/v1/meter/<int:meter_id>")
-    def get_meter(meter_id):
-        meters = find_meters(meter_id)
-        if len(meters) > 0:
-            return jsonify({'meter': meters[0]})
-        else:
-            return jsonify({})
+        return jsonify({'meters': map(lambda (k,m): {
+                'id': m.id,
+                'description': m.description,
+                'unit': m.unit,
+                'currentFactor': m.current_factor,
+                'currentUnit': m.current_unit,
+                'durations': m.durations
+            }, meters.iteritems())})
 
     @app.route("/api/v1/pulses/<int:meter_id>")
     def get_pulses(meter_id):
@@ -104,7 +99,7 @@ def init_api(app):
 
         # Obtain pulse readings
         with closing(get_db().cursor()) as cur:
-            cur.execute("SELECT timestamp, power FROM pulse_readings WHERE meter_ref = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, utc_start, utc_end));
+            cur.execute("SELECT `timestamp`, `power` FROM `pulse_readings` WHERE `meter_ref` = %s AND `timestamp` >= %s AND `timestamp` < %s ORDER BY `timestamp`", (meter_id, utc_start, utc_end))
             rows = cur.fetchall()
             nr_of_rows = len(rows)
             return jsonify({
@@ -113,34 +108,46 @@ def init_api(app):
                 'data': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
             })
 
-    @app.route("/api/v1/duration/<int:meter_id>/<int:duration>")
+    @app.route("/api/v1/usage/<int:meter_id>/<int:duration>")
     def get_pulses_by_duration(meter_id, duration):
         # Obtain the period
         [utc_start, utc_end] = get_period()
 
         # Obtain duration readings
         with closing(get_db().cursor()) as cur:
-            cur.execute("SELECT timestamp, avg_power FROM pulse_readings_per_duration WHERE meter_ref = %s AND duration = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, duration, utc_start, utc_end));
+            cur.execute("SELECT `timestamp`, `usage` FROM `pulse_readings_per_duration` WHERE `meter_ref` = %s AND `duration` = %s AND `timestamp` >= %s AND `timestamp` < %s ORDER BY `timestamp`", (meter_id, duration, utc_start, utc_end))
             rows = cur.fetchall()
             nr_of_rows = len(rows)
             return jsonify({
-                'start': from_sql_utc(rows[0][0]) if utc_start else utc_start,
-                'end': from_sql_utc(rows[nr_of_rows-1][0]) if utc_start else utc_start,
+                'start': from_sql_utc(rows[0][0]) if nr_of_rows > 0 else utc_start,
+                'end': from_sql_utc(rows[nr_of_rows-1][0]) if nr_of_rows > 0 else utc_start,
                 'data': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
             })
 
-    @app.route("/api/v1/extduration/<int:meter_id>/<int:duration>")
-    def get_pulses_by_duration_ext(meter_id, duration):
-        # Obtain the period
-        [utc_start, utc_end] = get_period()
-
+    @app.route("/api/v1/readings/last")
+    def get_last_readings():
         # Obtain duration readings
         with closing(get_db().cursor()) as cur:
-            cur.execute("SELECT timestamp, min_power, avg_power, max_power FROM pulse_readings_per_duration WHERE meter_ref = %s AND duration = %s AND timestamp >= %s AND timestamp < %s ORDER BY timestamp", (meter_id, duration, utc_start, utc_end));
+            # TODO: FIX THIS ONE, BECAUSE WE SHOULD ALSO CONSIDER THE MILLISECONDS
+            cur.execute("SELECT `pr`.`meter_ref`, `pr`.`timestamp`, `pr`.`milli_sec`, `pr`.`delta` FROM (SELECT `meter_ref`, MAX(`timestamp`) AS `max_timestamp` FROM `pulse_readings` GROUP BY `meter_ref`) `pr_last` INNER JOIN `pulse_readings` `pr` ON `pr_last`.`meter_ref` = `pr`.`meter_ref` AND `pr_last`.`max_timestamp` = `pr`.`timestamp`")
             rows = cur.fetchall()
-            nr_of_rows = len(rows)
+
+            # If the duration between the last pulse and the current moment is longer then
+            # the previous pulse, then update the actual power. Although this reading is
+            # not 100% correct, it's better then the last known value.
+            now = time.time()
+
+            def convert(row):
+                last_delta = row[3]
+                last_timestamp = (from_sql_utc(row[1]) + row[2]) / 1000.0
+                this_delta = now - last_timestamp
+                return {
+                    'id': row[0],
+                    'power': meters[row[0]].get_current_from_delta(this_delta if this_delta > last_delta else last_delta)
+
+                }
+
+            # Return the meter data
             return jsonify({
-                'start': from_sql_utc(rows[0][0]) if utc_start else utc_start,
-                'end': from_sql_utc(rows[nr_of_rows-1][0]) if utc_start else utc_start,
-                'data': map(lambda r: [from_sql_utc(r[0]), r[1], r[2], r[3]], rows)
+                'meters': map(convert, rows)
             })
