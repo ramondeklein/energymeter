@@ -19,7 +19,7 @@ app.controller 'EnergyChartController', ($scope, $interval, ReadingService) ->
     navigator:
       adaptToUpdatedData: false
     title:
-      text: 'Energy overview (times in UTC)'
+      text: 'Energy overview'
 
   ReadingService.getMeters().then (meters) ->
     # Add the meter
@@ -35,7 +35,7 @@ app.controller 'EnergyChartController', ($scope, $interval, ReadingService) ->
       duration = $scope.duration
       ReadingService.getPulsesByDuration meter.id, $scope.duration, $scope.period.start, $scope.period.end
       .then (result) ->
-        serie.setData [item[0], (item[1] * meter.currentFactor) / duration] for item in result.data
+        serie.setData ([item[0], Math.round (item[1] * meter.currentFactor) / duration] for item in result.data)
 
         # Update period based on the returned data
         if !$scope.period.start or result.start < $scope.period.start
