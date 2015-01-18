@@ -134,4 +134,4 @@ class Meter:
         return (pulses * self.current_factor) / duration
 
     def get_current_from_delta(self, delta):
-        return int(round(self.current_factor / (delta / 1000.0)))
+        return int(round(self.pulse_value * self.current_factor / (delta / 1000.0)))
