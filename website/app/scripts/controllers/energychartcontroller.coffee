@@ -30,6 +30,7 @@ app.controller 'EnergyChartController', ($scope, $interval, ReadingService) ->
       # Add the series to the chart
       serie = chart.addSeries
         name: meter.description
+        type: 'spline'
 
       # Get all the power readings for this meter from the back-end
       duration = $scope.duration
