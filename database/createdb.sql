@@ -35,6 +35,7 @@ CREATE TABLE `pulse_readings_per_duration` (
   `usage`        FLOAT       NOT NULL,
   `min_power`    FLOAT       NOT NULL,
   `max_power`    FLOAT       NOT NULL,
+  `cost`         FLOAT       NOT NULL,
 
   PRIMARY KEY (`meter_ref`, `duration`, `timestamp`)
 ) ENGINE = MYISAM;

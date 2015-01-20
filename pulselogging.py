@@ -25,6 +25,11 @@ def get_start_period(t, duration):
     return float(date_offset + (period_index * duration))
 
 
+def get_cost_time(t):
+    local_time = time.localtime(t)
+    return (local_time.tm_hour * 60) + local_time.tm_min
+
+
 class PulseDurations:
     def __init__(self, pulse_meter, duration):
         self.pulse_meter = pulse_meter
@@ -124,7 +129,7 @@ class PulseLogging:
                     this_period = get_start_period(now, pulse_duration.duration)
 
                     # Normally a pulse has weight 1, unless it is distributed among multiple periods. Then
-                    # the weight will be distributed evenly accross these periods
+                    # the weight will be distributed evenly across these periods
                     pulse_weight = 1.0
 
                     # Check if we have moved to a new period
@@ -163,10 +168,19 @@ class PulseLogging:
                             min_power = meter.get_current_from_delta(pulse_duration.max_delta) if pulse_duration.max_delta else 0.0
                             max_power = meter.get_current_from_delta(pulse_duration.min_delta) if pulse_duration.min_delta else 0.0
                             if pulse_duration.complete:
+                                # Determine the usage based on the number of pulses
                                 usage = meter.get_usage_from_pulses(pulse_duration.pulses)
+
+                                # Determine the average power consumed in this period
                                 avg_power = meter.get_current_from_pulses(pulse_duration.duration, pulse_duration.pulses)
-                                cur.execute("INSERT INTO `pulse_readings_per_duration`(`meter_ref`,`duration`,`timestamp`,`usage`,`min_power`,`max_power`) VALUES(%s,%s,%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, usage, min_power, max_power));
-                                logger.debug("%s: Pulse duration written (%s [%ds], usage %f%s, avg %d%s, %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, usage, meter.unit, avg_power, meter.current_unit, min_power, max_power, meter.current_unit))
+
+                                # Determine the usage cost in this period. Note that the actual pulse might be in another
+                                # period and this may have small differences
+                                cost = meter.get_cost(get_cost_time(pulse_duration.period)) * usage
+
+                                # Insert into the database
+                                cur.execute("INSERT INTO `pulse_readings_per_duration`(`meter_ref`,`duration`,`timestamp`,`usage`,`min_power`,`max_power`,`cost`) VALUES(%s,%s,%s,%s,%s,%s,%s)", (meter.id, pulse_duration.duration, datetime, usage, min_power, max_power, cost))
+                                logger.debug("%s: Pulse duration written (%s [%ds], usage %f%s (costs %f), avg %d%s, %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, usage, meter.unit, cost, avg_power, meter.current_unit, min_power, max_power, meter.current_unit))
                             else:
                                 logger.debug("%s: Incomplete duration record is not written (%s [%ds], %d-%d%s)" % (meter.description, datetime, pulse_duration.duration, min_power, max_power, meter.current_unit))
 

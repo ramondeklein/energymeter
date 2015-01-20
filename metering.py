@@ -40,24 +40,24 @@ def init():
             if (len(items) is 2) and items[0] == 'meter':
                 try:
                     # Create the meter
-                    meter = Meter(section, pulse_callback)
+                    meter = Meter(section)
 
                     # Check if the meter is enabled
                     if meter.enabled:
                         if not simulation:
                             logger.debug('Initializing GPIO for meter %d "%s"' % (meter.id, meter.description))
-                            meter.init_gpio()
+                            meter.init_gpio(pulse_callback)
                         else:
                             meter.simulation_key = chr(ord('1') + meter_index)
 
+                        # Append the meter to the list
+                        meters.append(meter)
+
+                        # Next meter
+                        meter_index += 1
+
                 except Exception as exc:
-                    logger.error('Error during configuration of meter %d "%s": %s' % (meter.id, meter.description, exc.message))
-
-                # Append the meter to the list
-                meters.append(meter)
-
-                # Next meter
-                meter_index += 1
+                    logger.error('Error during configuration of meters: %s' % exc.message)
 
         if not simulation:
             # TODO: Wait for SIGINT
