@@ -1,4 +1,8 @@
-app = angular.module 'energyMonitor', ['ngRoute']
+app = angular.module 'energyMonitor', ['ngRoute','ngMaterial']
+
+Highcharts.setOptions
+  global:
+    useUTC: false
 
 app.config ($routeProvider) ->
   $routeProvider

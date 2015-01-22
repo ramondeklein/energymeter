@@ -93,6 +93,7 @@ module.exports = (grunt) ->
 
       app:
         files: [
+          expand: true
           src: '<%= paths.tmp %>/scripts/{,*/}*.js'
         ]
 

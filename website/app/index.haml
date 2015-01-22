@@ -6,7 +6,7 @@
     %meta{'http-equiv' => 'X-UA-Compatible', 'content' => 'IE=edge'}
     %meta{'name' => 'description', 'content' => 'Energy Monitor for the Raspberry Pi'}
     %meta{'name' => 'author', 'content' => 'Ramon de Klein'}
-    %meta{'name' => 'viewport', 'content' => 'user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1'}
+    %meta{'name' => 'viewport', 'content' => 'user-scalable=no, initial-scale=1, maximum-scale=1'}
     %meta{'name' => 'fragment', 'content' => '!'}
     %base{'href' => '/'}
     -# Place favicon.ico and apple-touch-icon.png in the root directory
@@ -14,6 +14,7 @@
     / build:css(app) styles/vendor.css
     %link{:rel => 'stylesheet', :href => 'bower_components/html5-boilerplate/css/normalize.css'}
     %link{:rel => 'stylesheet', :href => 'bower_components/html5-boilerplate/css/main.css'}
+    %link{:rel => 'stylesheet', :href => 'bower_components/angular-material/angular-material.css'}
     / endbuild
 
     / build:css({.tmp,app}) styles/styles.css
@@ -34,6 +35,10 @@
     %script{'src' => 'bower_components/jquery/dist/jquery.js'}
     %script{'src' => 'bower_components/angular/angular.js'}
     %script{'src' => 'bower_components/angular-route/angular-route.js'}
+    %script{'src' => 'bower_components/angular-animate/angular-animate.js'}
+    %script{'src' => 'bower_components/angular-aria/angular-aria.js'}
+    %script{'src' => 'bower_components/hammerjs/hammer.js'}
+    %script{'src' => 'bower_components/angular-material/angular-material.js'}
     %script{'src' => 'bower_components/highstock-release/highstock.src.js'}
     / endbuild
 
@@ -43,4 +48,6 @@
     %script{'src' => 'scripts/services/readingservice.js'}
 
     %script{'src' => 'scripts/controllers/energychartcontroller.js'}
+
+    %script{'src' => 'scripts/directives/emchartdirective.js'}
     / endbuild

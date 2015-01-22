@@ -23,7 +23,7 @@ app.service 'ReadingService', ($http, $q) ->
       .error -> dfd.reject 'Unable to obtain the meter pulses.'
     dfd.promise;
 
-  getPulsesByDuration: (meter, duration, start, end) ->
+  getUsageByDuration: (meter, duration, start, end) ->
     dfd = $q.defer()
     params = {}
     params.start = start if start
@@ -31,7 +31,18 @@ app.service 'ReadingService', ($http, $q) ->
 
     $http.get "#{apiServer}/api/v1/usage/#{meter}/#{duration}", params: params
     .success (data) -> dfd.resolve data
-    .error -> dfd.reject 'Unable to obtain the meter pulses per duration.'
+    .error -> dfd.reject 'Unable to obtain the meter usage per duration.'
+    dfd.promise;
+
+  getCostByDuration: (meter, duration, start, end) ->
+    dfd = $q.defer()
+    params = {}
+    params.start = start if start
+    params.end = end if end
+
+    $http.get "#{apiServer}/api/v1/cost/#{meter}/#{duration}", params: params
+    .success (data) -> dfd.resolve data
+    .error -> dfd.reject 'Unable to obtain the meter cost per duration.'
     dfd.promise;
 
   getCurrentPower: ->

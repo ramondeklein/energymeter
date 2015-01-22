@@ -109,13 +109,29 @@ def init_api(app):
             })
 
     @app.route("/api/v1/usage/<int:meter_id>/<int:duration>")
-    def get_pulses_by_duration(meter_id, duration):
+    def get_usage_by_duration(meter_id, duration):
         # Obtain the period
         [utc_start, utc_end] = get_period()
 
         # Obtain duration readings
         with closing(get_db().cursor()) as cur:
             cur.execute("SELECT `timestamp`, `usage` FROM `pulse_readings_per_duration` WHERE `meter_ref` = %s AND `duration` = %s AND `timestamp` >= %s AND `timestamp` < %s ORDER BY `timestamp`", (meter_id, duration, utc_start, utc_end))
+            rows = cur.fetchall()
+            nr_of_rows = len(rows)
+            return jsonify({
+                'start': from_sql_utc(rows[0][0]) if nr_of_rows > 0 else utc_start,
+                'end': from_sql_utc(rows[nr_of_rows-1][0]) if nr_of_rows > 0 else utc_start,
+                'data': map(lambda r: [from_sql_utc(r[0]), r[1]], rows)
+            })
+
+    @app.route("/api/v1/cost/<int:meter_id>/<int:duration>")
+    def get_cost_by_duration(meter_id, duration):
+        # Obtain the period
+        [utc_start, utc_end] = get_period()
+
+        # Obtain duration readings
+        with closing(get_db().cursor()) as cur:
+            cur.execute("SELECT `timestamp`, `cost` FROM `pulse_readings_per_duration` WHERE `meter_ref` = %s AND `duration` = %s AND `timestamp` >= %s AND `timestamp` < %s ORDER BY `timestamp`", (meter_id, duration, utc_start, utc_end))
             rows = cur.fetchall()
             nr_of_rows = len(rows)
             return jsonify({
