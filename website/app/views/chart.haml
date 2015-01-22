@@ -1,7 +1,9 @@
 %div{ng: {controller: 'EnergyChartController'}}
   %md-tabs{md: {selected: 'selectedIndex'}}
     %md-tab{ng: {repeat: 'meter in meters'}, label: '{{meter.description}}'}
-      %em-chart{style: 'width: 100%; height: 400px;', em: {meter: 'meter', title: 'Today', date: 'today'}}
+      %em-chart{style: 'width: 100%; height: 400px;', em: {meter: 'meter', title: 'Today', date: 'date', altdate: 'altdate'}}
+  %md-checkbox{ng: {model: 'data.compareWithYesterday'}}
+    Compare with yesterday
 
 
 

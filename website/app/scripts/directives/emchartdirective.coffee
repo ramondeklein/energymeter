@@ -56,32 +56,29 @@ app.directive 'emChart', ($filter, $mdTheming) ->
         serie ?= chart.addSeries angular.extend {}, serieConfiguration[id], name: $filter('date')(date, 'shortDate')
 
         # Obtain only the date part
-        date = new Date(date.getTime())
-        date.setHours 0
-        date.setMinutes 0
-        date.setSeconds 0
-        date.setMilliseconds 0
+        date = new Date(date.getFullYear(), date.getMonth(), date.getDate())
 
         # Determine the duration
         duration = $scope.interval() or 60
 
         # Avoid loading the same date multiple times
-        if currentDate = date.getTime()
-          if currentDate != cache[id]
-            cache[id] = date.getTime()
+        currentDate = date.getTime()
+        if currentDate != cache[id]
+          cache[id] = date.getTime()
 
-            # Read the usage for this meter
-            ReadingService.getUsageByDuration meter.id, duration, date
-            .then (usageResult) ->
-              offset = date.getTime()
+          # Read the usage for this meter
+          ReadingService.getUsageByDuration meter.id, duration, date
+          .then (usageResult) ->
+            offset = date.getTime() - (date.getTimezoneOffset() * 60 * 1000)
 
-              # Set the proper data
-              serie.setData ([item[0]-offset, Math.round (item[1] * meter.currentFactor) / duration] for item in usageResult.data)
-            , ->
-              # Clear serie when no data can be loaded
-              serie.setData []
-        else
-          serie?.remove true
+            # Set the proper data
+            serie.setData ([item[0]-offset, Math.round (item[1] * meter.currentFactor) / duration] for item in usageResult.data)
+          , ->
+            # Clear serie when no data can be loaded
+            serie.setData []
+      else
+        cache[id] = null
+        serie?.remove true
 
     initGraph = ->
       if chart = $scope._chart
